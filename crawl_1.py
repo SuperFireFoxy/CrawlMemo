@@ -38,21 +38,25 @@ def get_links(html):
     webpage_regex=re.compile('<a[^>]+href=["\'](.*?)["\']',re.IGNORECASE)
     return webpage_regex.findall(html)
 
-def link_crawl_queue(seed_url,link_regex,delay):
+def link_crawl_queue(seed_url,link_regex,delay,max_depth=2):
     crawl_queue=[seed_url]
-    seen=set(crawl_queue)
+    seen={seed_url:0}
+       ## set(crawl_queue)
     throttle=Throttle(delay)
     while crawl_queue:
         url=crawl_queue.pop()
         throttle.wait(url)
         html=download(url)
-        for link in get_links(html):
-            if re.match(link_regex,link):
-                link=urlparse.urljoin(seed_url,link)
-                print link
-                if link not in crawl_queue:
-                    seen.add(link)
-                    crawl_queue.append(link)
+        depth=seen[url]
+        if depth != max_depth:
+            for link in get_links(html):
+                if re.match(link_regex,link):
+                    link=urlparse.urljoin(seed_url,link)
+                    print link
+                    if link not in crawl_queue:
+                        seen[link]=depth+1
+                        print seen
+                        crawl_queue.append(link)
     return seen
 
 f=link_crawl_queue("https://zhidao.baidu.com/question/711311640707979565.html",'/(question)',2)
